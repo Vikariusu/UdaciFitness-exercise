@@ -1,9 +1,15 @@
 import React, { Component } from 'react'
 import { View, TouchableOpacity, Text } from 'react-native'
-import { getMetricMetaInfo, timeToString } from '../utils/helpers'
+import { getMetricMetaInfo, timeToString, getDailyReminderValue } from '../utils/helpers'
+import { Ionicons } from '@expo/vector-icons'
 import UdaciSlider from './UdaciSlider'
 import UdaciSteppers from './UdaciSteppers'
 import DateHeader from './DateHeader'
+import TextButton from './TextButton'
+import { submitEntry, removeEntry } from '../utils/api'
+
+import { connect } from 'react-redux'
+import { addEntry } from '../actions'
 
 function SubmitBtn({ onPress }) {
     return (
@@ -15,7 +21,7 @@ function SubmitBtn({ onPress }) {
     )
 }
 
-export default class AddEntry extends Component {
+class AddEntry extends Component {
     state = {
         run: 0,
         bike: 0,
@@ -28,7 +34,7 @@ export default class AddEntry extends Component {
     increment = (metric) => {
         const { max, step } = getMetricMetaInfo(metric)
 
-        this.setState(() => {
+        this.setState((state) => {
             const count = state[metric] + step;
 
             return {
@@ -40,7 +46,7 @@ export default class AddEntry extends Component {
 
     // Decrement UdaciSteppers
     decrement = (metric) => {
-        this.setState(() => {
+        this.setState((state) => {
             const count = state[metric] - getMetricMetaInfo(metric).step;
 
             return {
@@ -62,6 +68,9 @@ export default class AddEntry extends Component {
         const entry = this.state
 
         // Update Redux
+        this.props.dispatch(addEntry({
+            [time]: entry
+        }))
 
         this.setState(() => ({
             run: 0,
@@ -73,19 +82,51 @@ export default class AddEntry extends Component {
 
         // Navigate to home
 
-        // Save to 'DB'
+        // Save to 'DB' - AsyncStorage
+        submitEntry({ time, entry })
 
         // Clean local notification
 
     }
 
+    // reset used by the TextButton to clear the entry for the day
+    reset = () => {
+        const time = timeToString();
+
+        // Update Redux
+        // will display "Don't forget to log your data today!"
+        this.props.dispatch(addEntry({
+            [time]: getDailyReminderValue()
+        }))
+
+        // Route to Home
+
+        // Update "DB" - AsyncStorage
+        removeEntry(time)
+
+    }
+
     render() {
         const metaInfo = getMetricMetaInfo()
+
+        if (this.props.alreadyLogged) {
+            return (
+                <View>
+                    <Ionicons
+                        name={'ios-happy'}
+                        size={100}
+                    />
+                    <Text>You already logged your information for today</Text>
+                    <TextButton onPress={this.reset}>
+                        Reset
+                    </TextButton>
+                </View>
+            )
+        }
+
         return (
             <View>
                 <DateHeader date={(new Date()).toLocaleDateString()} />
-                <Text>{JSON.stringify(this.state)}</Text>
-
                 {
                     Object.keys(metaInfo).map((metric) => {
                         const { getIcon, type, ...rest } = metaInfo[metric];
@@ -97,7 +138,7 @@ export default class AddEntry extends Component {
                                 {type === 'slider'
                                     ? <UdaciSlider
                                         value={value}
-                                        onChange={(value) => this.slide(key, value)}
+                                        onChange={(value) => this.slide(metric, value)}
                                         {...rest}
                                     />
                                     : <UdaciSteppers
@@ -107,9 +148,7 @@ export default class AddEntry extends Component {
                                     />
                                 }
                             </View>
-
                         )
-
                     })
                 }
 
@@ -118,3 +157,13 @@ export default class AddEntry extends Component {
         )
     }
 }
+
+function mapStateToProps(state) {
+    const time = timeToString()
+
+    return {
+        alreadyLogged: state[time] && typeof state[time].today === 'undefined'
+    }
+}
+
+export default connect(mapStateToProps)(AddEntry)
