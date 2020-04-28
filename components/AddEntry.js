@@ -148,6 +148,7 @@ class AddEntry extends Component {
                                         value={value}
                                         onIncrement={() => this.increment(metric)}
                                         onDecrement={() => this.decrement(metric)}
+                                        {...rest}
                                     />
                                 }
                             </View>
@@ -183,8 +184,8 @@ const styles = StyleSheet.create({
     androidSubmitBtn: {
         backgroundColor: purple,
         padding: 10,
-        marginLeft: 30,
-        marginRight: 30,
+        paddingLeft: 30,
+        paddingRight: 30,
         height: 45,
         borderRadius: 2,
         alignSelf: 'flex-end',
