@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, Slider } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import AddEntry from './components/AddEntry';
 import { createStore } from 'redux'
 import { Provider } from 'react-redux'
@@ -13,7 +13,7 @@ export default class App extends React.Component {
   render() {
     return (
       <Provider store={createStore(reducer)}>
-        <View style={styles.container}>
+        <View style={{ flex: 1 }}>
           <AddEntry />
         </View>
       </Provider>
